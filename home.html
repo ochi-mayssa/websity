@@ -1,0 +1,62 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Home - Websitey{% endblock %}
+
+{% block content %}
+<div class="hero-section text-center py-5 bg-light rounded-3 mb-5">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-4">Discover Everything About Any Entity</h1>
+        <p class="lead mb-4">Search for companies, clinics, or any organization to get comprehensive information including financials, deals, and user opinions.</p>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <form action="{% url 'search' %}" method="post" class="search-form">
+                    {% csrf_token %}
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control form-control-lg" name="entity_name" placeholder="Enter company, clinic, or organization name" required>
+                        <select class="form-select" name="entity_type" style="max-width: 150px;">
+                            <option value="company">Company</option>
+                            <option value="clinic">Clinic</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <button class="btn btn-primary btn-lg" type="submit">Search</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="features-section">
+    <div class="row text-center">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                    <h3>Financial Insights</h3>
+                    <p>Get real-time financial data including stock prices, market cap, and historical performance.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <i class="fas fa-newspaper fa-3x text-primary mb-3"></i>
+                    <h3>Latest Deals & News</h3>
+                    <p>Stay updated with the most recent deals, partnerships, and news about your searched entities.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <i class="fas fa-comments fa-3x text-primary mb-3"></i>
+                    <h3>User Opinions</h3>
+                    <p>See what people are saying about companies and clinics from multiple sources.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

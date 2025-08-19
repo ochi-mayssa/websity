@@ -1,0 +1,236 @@
+{% extends "core/base.html" %}
+
+{% block title %}Search - Websitey{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-container {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        color: white;
+        padding: 40px 0;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+    .symbol-guide {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 5px;
+        padding: 10px;
+        margin-top: 10px;
+    }
+    .popular-symbols {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 5px;
+    }
+    .symbol-pill {
+        background-color: rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .symbol-pill:hover {
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+    .search-tips {
+        background-color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="search-container">
+    <div class="container">
+        <h1 class="text-center mb-4">Find Information About Any Entity</h1>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <form action="{% url 'search' %}" method="post" class="search-form" id="searchForm">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="text" class="form-control form-control-lg" 
+                               name="entity_name" placeholder="Enter company name or symbol" 
+                               required id="searchInput">
+                        <select class="form-select" name="entity_type" id="entityType" style="max-width: 150px;">
+                            <option value="company">Company</option>
+                            <option value="clinic">Clinic</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <button class="btn btn-light btn-lg" type="submit">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="symbol-guide mt-3">
+                    <small>
+                        <strong>Tip:</strong> For companies, use stock symbols for better financial data results.
+                        <div class="popular-symbols">
+                            <span class="symbol-pill" data-symbol="AAPL">AAPL</span>
+                            <span class="symbol-pill" data-symbol="MSFT">MSFT</span>
+                            <span class="symbol-pill" data-symbol="GOOGL">GOOGL</span>
+                            <span class="symbol-pill" data-symbol="AMZN">AMZN</span>
+                            <span class="symbol-pill" data-symbol="TSLA">TSLA</span>
+                            <span class="symbol-pill" data-symbol="META">META</span>
+                        </div>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4">
+    {% if query %}
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-4">Search Results for "{{ query }}"</h3>
+            
+            {% if results %}
+                {% for result in results %}
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ result.name }}</h5>
+                        <span class="badge bg-light text-dark">{{ result.type|title }}</span>
+                    </div>
+                    <div class="card-body">
+                        {% if result.financials and result.financials.items|length > 1 %}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6>Financial Data</h6>
+                                <div class="row">
+                                    {% if result.financials.current_price %}
+                                    <div class="col-6 mb-2">
+                                        <p class="mb-0"><strong>Price:</strong></p>
+                                        <p class="mb-0">{{ result.financials.current_price }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if result.financials.market_cap %}
+                                    <div class="col-6 mb-2">
+                                        <p class="mb-0"><strong>Market Cap:</strong></p>
+                                        <p class="mb-0">{{ result.financials.market_cap }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if result.financials.pe_ratio %}
+                                    <div class="col-6 mb-2">
+                                        <p class="mb-0"><strong>P/E Ratio:</strong></p>
+                                        <p class="mb-0">{{ result.financials.pe_ratio }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if result.financials.volume %}
+                                    <div class="col-6 mb-2">
+                                        <p class="mb-0"><strong>Volume:</strong></p>
+                                        <p class="mb-0">{{ result.financials.volume }}</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Additional Info</h6>
+                                <div class="row">
+                                    {% if result.financials.previous_close %}
+                                    <div class="col-6 mb-2">
+                                        <p class="mb-0"><strong>Prev Close:</strong></p>
+                                        <p class="mb-0">{{ result.financials.previous_close }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if result.financials.open_price %}
+                                    <div class="col-6 mb-2">
+                                        <p class="mb-0"><strong>Open:</strong></p>
+                                        <p class="mb-0">{{ result.financials.open_price }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if result.financials.day_range %}
+                                    <div class="col-6 mb-2">
+                                        <p class="mb-0"><strong>Day Range:</strong></p>
+                                        <p class="mb-0">{{ result.financials.day_range }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if result.financials.52_week_range %}
+                                    <div class="col-6 mb-2">
+                                        <p class="mb-0"><strong>52W Range:</strong></p>
+                                        <p class="mb-0">{{ result.financials.52_week_range }}</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-end">
+                            <a href="{% url 'entity_detail' entity_name=result.name %}" 
+                               class="btn btn-primary">
+                                <i class="fas fa-chart-line me-1"></i> View Full Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-warning text-center">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                    <h4>No results found for "{{ query }}"</h4>
+                    <p>Try using a stock symbol for companies, or check your spelling.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="search-tips">
+                <h4>Search Tips</h4>
+                <ul>
+                    <li>For <strong>companies</strong>, use stock symbols (AAPL, MSFT) for the best financial data</li>
+                    <li>For <strong>clinics</strong>, use the full name for better results</li>
+                    <li>For <strong>other organizations</strong>, try to be as specific as possible</li>
+                </ul>
+                
+                <h5 class="mt-4">Popular Stock Symbols</h5>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    <span class="badge bg-primary">AAPL - Apple</span>
+                    <span class="badge bg-primary">MSFT - Microsoft</span>
+                    <span class="badge bg-primary">GOOGL - Google</span>
+                    <span class="badge bg-primary">AMZN - Amazon</span>
+                    <span class="badge bg-primary">TSLA - Tesla</span>
+                    <span class="badge bg-primary">META - Meta</span>
+                    <span class="badge bg-primary">JNJ - Johnson & Johnson</span>
+                    <span class="badge bg-primary">JPM - JPMorgan Chase</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Prefill search with popular symbols when clicked
+    document.querySelectorAll('.symbol-pill').forEach(pill => {
+        pill.addEventListener('click', function() {
+            document.getElementById('searchInput').value = this.getAttribute('data-symbol');
+            document.getElementById('entityType').value = 'company';
+            document.getElementById('searchForm').submit();
+        });
+    });
+    
+    // Auto-focus on search input
+    document.getElementById('searchInput').focus();
+});
+</script>
+{% endblock %}

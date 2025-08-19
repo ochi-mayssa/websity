@@ -1,0 +1,449 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ entity.name }} - Websitey{% endblock %}
+
+{% block extra_css %}
+<style>
+    .info-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    .info-card-header {
+        padding: 15px 20px;
+        background-color: #0d6efd;
+        color: white;
+        font-weight: bold;
+    }
+    .info-card-body {
+        padding: 20px;
+        background-color: white;
+    }
+    .financial-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .financial-item {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    .financial-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .financial-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 5px;
+    }
+    .financial-value {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #0d6efd;
+    }
+    .financial-na {
+        color: #6c757d;
+        font-style: italic;
+    }
+    .source-badge {
+        background-color: #6c757d;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        margin-right: 5px;
+    }
+    .data-warning {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+    .price-change-positive {
+        color: #28a745;
+        font-weight: bold;
+    }
+    .price-change-negative {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .company-info {
+        background-color: #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>{{ entity.name }} <small class="text-muted">{{ entity.get_entity_type_display }}</small></h2>
+        {% if data.sources %}
+        <div class="mb-3">
+            <small class="text-muted">Data sources: </small>
+            {% for source in data.sources %}
+            <span class="source-badge">{{ source }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-md-4 text-end">
+        <button class="btn btn-outline-primary" onclick="window.location.reload()">
+            <i class="fas fa-sync-alt"></i> Refresh Data
+        </button>
+    </div>
+</div>
+
+<!-- Company Information -->
+{% if data.financials and data.financials.company_name %}
+<div class="company-info">
+    <div class="row">
+        {% if data.financials.image %}
+        <div class="col-md-2 text-center">
+            <img src="{{ data.financials.image }}" alt="{{ data.financials.company_name }} logo" class="img-fluid rounded" style="max-height: 80px;">
+        </div>
+        {% endif %}
+        <div class="{% if data.financials.image %}col-md-10{% else %}col-12{% endif %}">
+            <h4>{{ data.financials.company_name }}</h4>
+            <div class="row">
+                {% if data.financials.industry %}
+                <div class="col-md-4">
+                    <strong>Industry:</strong> {{ data.financials.industry }}
+                </div>
+                {% endif %}
+                {% if data.financials.sector %}
+                <div class="col-md-4">
+                    <strong>Sector:</strong> {{ data.financials.sector }}
+                </div>
+                {% endif %}
+                {% if data.financials.exchange %}
+                <div class="col-md-4">
+                    <strong>Exchange:</strong> {{ data.financials.exchange }}
+                </div>
+                {% endif %}
+                {% if data.financials.ceo %}
+                <div class="col-md-4 mt-2">
+                    <strong>CEO:</strong> {{ data.financials.ceo }}
+                </div>
+                {% endif %}
+                {% if data.financials.website %}
+                <div class="col-md-8 mt-2">
+                    <strong>Website:</strong> 
+                    <a href="{{ data.financials.website }}" target="_blank">{{ data.financials.website }}</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Data Availability Warning -->
+{% if entity.entity_type == 'company' and not data.financials or data.financials.items|length <= 1 %}
+<div class="data-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <strong>Limited financial data available.</strong> This could be due to:
+    <ul class="mb-0 mt-2">
+        <li>Company not being publicly traded</li>
+        <li>Using a company name instead of stock symbol</li>
+        <li>Temporary service unavailability</li>
+    </ul>
+    <p class="mb-0 mt-2">Try searching with a stock symbol (e.g., AAPL for Apple, MSFT for Microsoft) for better results.</p>
+</div>
+{% endif %}
+
+<!-- Financial Data -->
+{% if data.financials and data.financials.items|length > 1 %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="info-card">
+            <div class="info-card-header">
+                <i class="fas fa-chart-line me-2"></i> Financial Information
+            </div>
+            <div class="info-card-body">
+                <!-- Price Information -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Price Information</h5>
+                        <div class="financial-grid">
+                            {% if data.financials.current_price %}
+                            <div class="financial-item">
+                                <div class="financial-label">Current Price</div>
+                                <div class="financial-value">
+                                    {% if data.financials.currency %}{{ data.financials.currency }} {% endif %}{{ data.financials.current_price }}
+                                </div>
+                                {% if data.financials.price_change and data.financials.price_change_percentage %}
+                                <div class="mt-2 {% if data.financials.price_change >= 0 %}price-change-positive{% else %}price-change-negative{% endif %}">
+                                    {{ data.financials.price_change|floatformat:2 }} 
+                                    ({{ data.financials.price_change_percentage|floatformat:2 }}%)
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.previous_close %}
+                            <div class="financial-item">
+                                <div class="financial-label">Previous Close</div>
+                                <div class="financial-value">
+                                    {% if data.financials.currency %}{{ data.financials.currency }} {% endif %}{{ data.financials.previous_close }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.open %}
+                            <div class="financial-item">
+                                <div class="financial-label">Open Price</div>
+                                <div class="financial-value">
+                                    {% if data.financials.currency %}{{ data.financials.currency }} {% endif %}{{ data.financials.open }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.day_high and data.financials.day_low %}
+                            <div class="financial-item">
+                                <div class="financial-label">Day's Range</div>
+                                <div class="financial-value">
+                                    {% if data.financials.currency %}{{ data.financials.currency }} {% endif %}{{ data.financials.day_low }} - {{ data.financials.day_high }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.year_high and data.financials.year_low %}
+                            <div class="financial-item">
+                                <div class="financial-label">52-Week Range</div>
+                                <div class="financial-value">
+                                    {% if data.financials.currency %}{{ data.financials.currency }} {% endif %}{{ data.financials.year_low }} - {{ data.financials.year_high }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>Market Data</h5>
+                        <div class="financial-grid">
+                            {% if data.financials.market_cap %}
+                            <div class="financial-item">
+                                <div class="financial-label">Market Cap</div>
+                                <div class="financial-value">{{ data.financials.market_cap }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.volume %}
+                            <div class="financial-item">
+                                <div class="financial-label">Volume</div>
+                                <div class="financial-value">{{ data.financials.volume }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.avg_volume %}
+                            <div class="financial-item">
+                                <div class="financial-label">Avg. Volume</div>
+                                <div class="financial-value">{{ data.financials.avg_volume }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.pe_ratio %}
+                            <div class="financial-item">
+                                <div class="financial-label">P/E Ratio</div>
+                                <div class="financial-value">{{ data.financials.pe_ratio }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.eps %}
+                            <div class="financial-item">
+                                <div class="financial-label">EPS</div>
+                                <div class="financial-value">
+                                    {% if data.financials.currency %}{{ data.financials.currency }} {% endif %}{{ data.financials.eps }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.dividend_yield %}
+                            <div class="financial-item">
+                                <div class="financial-label">Dividend Yield</div>
+                                <div class="financial-value">{{ data.financials.dividend_yield }}%</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Financial Metrics -->
+                {% if data.financials.peg_ratio or data.financials.beta or data.financials.return_on_equity %}
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h5>Additional Metrics</h5>
+                        <div class="financial-grid">
+                            {% if data.financials.peg_ratio %}
+                            <div class="financial-item">
+                                <div class="financial-label">PEG Ratio</div>
+                                <div class="financial-value">{{ data.financials.peg_ratio }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.beta %}
+                            <div class="financial-item">
+                                <div class="financial-label">Beta</div>
+                                <div class="financial-value">{{ data.financials.beta }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.return_on_equity %}
+                            <div class="financial-item">
+                                <div class="financial-label">Return on Equity</div>
+                                <div class="financial-value">{{ data.financials.return_on_equity }}%</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.return_on_assets %}
+                            <div class="financial-item">
+                                <div class="financial-label">Return on Assets</div>
+                                <div class="financial-value">{{ data.financials.return_on_assets }}%</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.current_ratio %}
+                            <div class="financial-item">
+                                <div class="financial-label">Current Ratio</div>
+                                <div class="financial-value">{{ data.financials.current_ratio }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if data.financials.quick_ratio %}
+                            <div class="financial-item">
+                                <div class="financial-label">Quick Ratio</div>
+                                <div class="financial-value">{{ data.financials.quick_ratio }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        {% if data.financials.source %}
+                            Data provided by {{ data.financials.source }}
+                        {% else %}
+                            Financial data from multiple sources
+                        {% endif %}
+                        {% if data.financials.currency %} in {{ data.financials.currency }}{% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Latest Deals -->
+{% if data.deals %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="info-card">
+            <div class="info-card-header">
+                <i class="fas fa-newspaper me-2"></i> Latest News & Deals
+            </div>
+            <div class="info-card-body">
+                <div class="list-group">
+                    {% for deal in data.deals %}
+                    <a href="{{ deal.link }}" target="_blank" rel="noopener noreferrer" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ deal.title }}</h6>
+                            <small class="text-muted">{{ deal.date }}</small>
+                        </div>
+                        <small class="text-muted">{{ deal.source }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- User Opinions -->
+{% if data.opinions %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="info-card">
+            <div class="info-card-header">
+                <i class="fas fa-comments me-2"></i> User Opinions
+            </div>
+            <div class="info-card-body">
+                {% for opinion in data.opinions %}
+                <div class="opinion-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ opinion.source }}</strong>
+                            {% if opinion.subreddit %}
+                            <span class="subreddit-badge">r/{{ opinion.subreddit }}</span>
+                            {% endif %}
+                            <small class="text-muted ms-2">{{ opinion.date }}</small>
+                        </div>
+                        <span class="badge bg-primary">{{ opinion.score }} points</span>
+                    </div>
+                    <p class="mt-2 mb-1">{{ opinion.text }}</p>
+                    <a href="{{ opinion.url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
+                        View Original
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Save to Dashboard</h5>
+                <p class="card-text">Get alerts when there are updates about {{ entity.name }}</p>
+                <button class="btn btn-primary" id="saveEntityBtn" data-entity-id="{{ entity.id }}">
+                    <i class="fas fa-bell me-2"></i> Enable Alerts
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('saveEntityBtn').addEventListener('click', function() {
+    const entityId = this.getAttribute('data-entity-id');
+    fetch(`/dashboard/save-entity/${entityId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            alert('Entity saved to your dashboard! You will now receive alerts.');
+            this.innerHTML = '<i class="fas fa-check me-2"></i> Alerts Enabled';
+            this.classList.remove('btn-primary');
+            this.classList.add('btn-success');
+            this.disabled = true;
+        }
+    });
+});
+</script>
+{% endblock %}
